@@ -25,7 +25,7 @@ A comunicação entre o controle e o jogo será feita através do protocolo UART
 
 ## Diagrama de Blocos Explicativo do Firmware
 
-![Diagrama:](public/diagrama.png)
+![Diagrama:](public/diagrama.drawio.png)
 
 ## Proposta do Controle:
 
