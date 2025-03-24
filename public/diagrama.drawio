@@ -1,0 +1,85 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:136.0) Gecko/20100101 Firefox/136.0" version="26.1.1">
+  <diagram name="Page-1" id="-MxAVYHhtQeu3tgCcuyF">
+    <mxGraphModel dx="1167" dy="658" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-1" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="380" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-2" value="Acelerador" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="365" y="390" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-3" value="Freio" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="365" y="420" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-5" value="Volante" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="425" y="405" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-7" value="Input CallBack" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="385" y="350" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="lAjlPpIZLCyEKjDr24YD-8" target="lAjlPpIZLCyEKjDr24YD-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="lAjlPpIZLCyEKjDr24YD-8" target="lAjlPpIZLCyEKjDr24YD-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="lAjlPpIZLCyEKjDr24YD-8" target="lAjlPpIZLCyEKjDr24YD-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-8" value="ProcessTask" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="500" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0.033;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="lAjlPpIZLCyEKjDr24YD-1" target="lAjlPpIZLCyEKjDr24YD-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-10" value="CalculoVolante" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="530" y="600" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-11" value="CalculoPedal" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="190" y="600" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="lAjlPpIZLCyEKjDr24YD-12" target="lAjlPpIZLCyEKjDr24YD-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-12" value="CentralTask" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="740" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="lAjlPpIZLCyEKjDr24YD-13" target="lAjlPpIZLCyEKjDr24YD-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-13" value="PC" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="850" width="130" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.005;entryY=0.581;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="lAjlPpIZLCyEKjDr24YD-11" target="lAjlPpIZLCyEKjDr24YD-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.997;entryY=0.588;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="lAjlPpIZLCyEKjDr24YD-10" target="lAjlPpIZLCyEKjDr24YD-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-24" value="UART" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="420" y="820" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-25" value="QueueSendVoltante" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="510" y="710" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-26" value="QueueSendPedal" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="260" y="700" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-27" value="QueueCalcVolante" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="520" y="510" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-28" value="QueueCalcPedal" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="280" y="510" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-29" value="SemaphoreProcess" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="395" y="630" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lAjlPpIZLCyEKjDr24YD-30" value="QueueInput" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="440" y="460" width="60" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
