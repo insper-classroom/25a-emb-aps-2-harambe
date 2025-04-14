@@ -1,6 +1,3 @@
-/*
- * LED blink with FreeRTOS
- */
 #include <FreeRTOS.h>
 #include <task.h>
 #include <semphr.h>
@@ -10,128 +7,91 @@
 #include "gfx.h"
 
 #include "pico/stdlib.h"
+#include "hardware/adc.h"
 #include <stdio.h>
 
-const uint BTN_1_OLED = 28;
-const uint BTN_2_OLED = 26;
-const uint BTN_3_OLED = 27;
+#include "hardware/uart.h"
+#include "pico/binary_info.h"
 
-const uint LED_1_OLED = 20;
-const uint LED_2_OLED = 21;
-const uint LED_3_OLED = 22;
+#define UART_ID uart0
+#define BAUD_RATE 115200
 
-void oled1_btn_led_init(void) {
-    gpio_init(LED_1_OLED);
-    gpio_set_dir(LED_1_OLED, GPIO_OUT);
+#define UART_TX_PIN 0
+#define UART_RX_PIN 1
 
-    gpio_init(LED_2_OLED);
-    gpio_set_dir(LED_2_OLED, GPIO_OUT);
+#define ENCODER_CLK_PIN 15 // A ou CLK
+#define ENCODER_DT_PIN 14  // B ou DT
 
-    gpio_init(LED_3_OLED);
-    gpio_set_dir(LED_3_OLED, GPIO_OUT);
+QueueHandle_t xQueueADC;
 
-    gpio_init(BTN_1_OLED);
-    gpio_set_dir(BTN_1_OLED, GPIO_IN);
-    gpio_pull_up(BTN_1_OLED);
+typedef struct encoder {
+    bool clk;
+    bool dt;
+} encoder_data;
 
-    gpio_init(BTN_2_OLED);
-    gpio_set_dir(BTN_2_OLED, GPIO_IN);
-    gpio_pull_up(BTN_2_OLED);
-
-    gpio_init(BTN_3_OLED);
-    gpio_set_dir(BTN_3_OLED, GPIO_IN);
-    gpio_pull_up(BTN_3_OLED);
+void init_uart() {
+    uart_init(UART_ID, BAUD_RATE);
+    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
+    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
 }
 
-void oled1_demo_1(void *p) {
-    printf("Inicializando Driver\n");
-    ssd1306_init();
-
-    printf("Inicializando GLX\n");
-    ssd1306_t disp;
-    gfx_init(&disp, 128, 32);
-
-    printf("Inicializando btn and LEDs\n");
-    oled1_btn_led_init();
-
-    char cnt = 15;
+void encoder_task(void *p) {
+    encoder_data encoder_data;    
     while (1) {
+        bool clk_state = gpio_get(ENCODER_CLK_PIN);
+        bool dt_state = gpio_get(ENCODER_DT_PIN);
 
-        if (gpio_get(BTN_1_OLED) == 0) {
-            cnt = 15;
-            gpio_put(LED_1_OLED, 0);
-            gfx_clear_buffer(&disp);
-            gfx_draw_string(&disp, 0, 0, 1, "LED 1 - ON");
-            gfx_show(&disp);
-        } else if (gpio_get(BTN_2_OLED) == 0) {
-            cnt = 15;
-            gpio_put(LED_2_OLED, 0);
-            gfx_clear_buffer(&disp);
-            gfx_draw_string(&disp, 0, 0, 1, "LED 2 - ON");
-            gfx_show(&disp);
-        } else if (gpio_get(BTN_3_OLED) == 0) {
-            cnt = 15;
-            gpio_put(LED_3_OLED, 0);
-            gfx_clear_buffer(&disp);
-            gfx_draw_string(&disp, 0, 0, 1, "LED 3 - ON");
-            gfx_show(&disp);
-        } else {
+        encoder_data.clk = clk_state;
+        encoder_data.dt = dt_state;
 
-            gpio_put(LED_1_OLED, 1);
-            gpio_put(LED_2_OLED, 1);
-            gpio_put(LED_3_OLED, 1);
-            gfx_clear_buffer(&disp);
-            gfx_draw_string(&disp, 0, 0, 1, "PRESSIONE ALGUM");
-            gfx_draw_string(&disp, 0, 10, 1, "BOTAO");
-            gfx_draw_line(&disp, 15, 27, cnt,
-                          27);
-            vTaskDelay(pdMS_TO_TICKS(50));
-            if (++cnt == 112)
-                cnt = 15;
-
-            gfx_show(&disp);
+        if (clk_state != dt_state){
+            xQueueSend(xQueueADC, &encoder_data, 100);
         }
+        // xQueueSend(xQueueADC, &encoder_data, 100);
+
+
+        vTaskDelay(pdMS_TO_TICKS(1));  // Evita busy-loop
     }
 }
 
-void oled1_demo_2(void *p) {
-    printf("Inicializando Driver\n");
-    ssd1306_init();
+void uart_task(void *p) {
+    encoder_data data;
 
-    printf("Inicializando GLX\n");
-    ssd1306_t disp;
-    gfx_init(&disp, 128, 32);
+    while (true) {
+        if (xQueueReceive(xQueueADC, &data, 100)) {
+            uint8_t pacote[2];
 
-    printf("Inicializando btn and LEDs\n");
-    oled1_btn_led_init();
+            // Pacote[0] → bits com CLK e DT: 
+            // clk ocupa o bit 1 (<< 1), dt ocupa o bit 0
+            pacote[0] = (data.clk << 1) | (data.dt & 0x01);
 
-    char cnt = 15;
-    while (1) {
+            // Byte de fim (pode ser um marcador, como 0xFF)
+            pacote[1] = 0xFF;
 
-        gfx_clear_buffer(&disp);
-        gfx_draw_string(&disp, 0, 0, 1, "Mandioca");
-        gfx_show(&disp);
-        vTaskDelay(pdMS_TO_TICKS(150));
-
-        gfx_clear_buffer(&disp);
-        gfx_draw_string(&disp, 0, 0, 2, "Batata");
-        gfx_show(&disp);
-        vTaskDelay(pdMS_TO_TICKS(150));
-
-        gfx_clear_buffer(&disp);
-        gfx_draw_string(&disp, 0, 0, 4, "Inhame");
-        gfx_show(&disp);
-        vTaskDelay(pdMS_TO_TICKS(150));
+            uart_write_blocking(UART_ID, pacote, 2);  // Envia os 3 bytes pela UART
+        }
     }
 }
 
 int main() {
     stdio_init_all();
+    init_uart();
 
-    xTaskCreate(oled1_demo_2, "Demo 2", 4095, NULL, 1, NULL);
+    // Configura os pinos do encoder
+    gpio_init(ENCODER_CLK_PIN);
+    gpio_set_dir(ENCODER_CLK_PIN, GPIO_IN);
+    gpio_pull_up(ENCODER_CLK_PIN);
+
+    gpio_init(ENCODER_DT_PIN);
+    gpio_set_dir(ENCODER_DT_PIN, GPIO_IN);
+    gpio_pull_up(ENCODER_DT_PIN);
+
+    xQueueADC = xQueueCreate(32, sizeof(encoder_data));
+
+    xTaskCreate(encoder_task, "encoderTask", 4096, NULL, 1, NULL);
+    xTaskCreate(uart_task, "uartTask", 4096, NULL, 1, NULL);
 
     vTaskStartScheduler();
 
-    while (true)
-        ;
+    while (true) {}
 }
