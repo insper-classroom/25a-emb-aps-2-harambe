@@ -14,8 +14,7 @@ def move_mouse(x_value, y_value):
     pyautogui.moveRel(x_value, y_value)
 
 def controle(ser):
-    step_counter = 0
-    last_clk = 0
+    """Lê os sinais CLK e DT do encoder e atualiza o step_counter com base em transições de CLK."""
 
     while True:
         pacote = ser.read(2)
@@ -27,21 +26,13 @@ def controle(ser):
         if end_byte != 0xFF:
             continue  # ignora pacotes inválidos
 
-        clk = (data_byte >> 1) & 0x01
-        dt = data_byte & 0x01
-        print('clk:', clk, 'dt:', dt)
+        data_byte_signed = int.from_bytes(bytes([data_byte]), byteorder='little', signed=True)
 
-        # Detecta borda de subida em CLK
-        if last_clk == 0 and clk == 1:
-            if dt == 1:
-                step_counter += 1  # horário
-            else:
-                step_counter -= 1  # anti-horário
+        print("Step Counter:", data_byte_signed)
 
-        # print("Result =", step_counter)
-
-        last_clk = clk
         sleep(0.001)
+
+
 
 
 def serial_ports():
