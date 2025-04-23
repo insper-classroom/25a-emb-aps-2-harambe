@@ -14,6 +14,11 @@
 #include "pico/stdlib.h"
 #include "Fusion.h"
 
+#define BUTTON1_GPIO 10
+#define BUTTON2_GPIO 11
+#define BUTTON3_GPIO 12
+#define BUTTON4_GPIO 13
+
 #define UART_ID uart0
 #define BAUD_RATE 115200
 #define UART_TX_PIN 0
@@ -23,8 +28,15 @@
 #define I2C_SCL_GPIO 5
 #define MPU_ADDRESS 0x68
 
-#define CLICK_THRESHOLD 20
+#define ANALOG_TOLERANCE 10
 #define TOLERANCIA 1
+
+typedef enum {
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
+    BUTTON_4
+} ButtonId;
 
 QueueHandle_t xQueueSteer;
 QueueHandle_t xQueueAccel;
@@ -76,7 +88,7 @@ void mpu6050_task(void *p) {
 
     int16_t acceleration[3], gyro[3], temp;
     TickType_t lastTick = xTaskGetTickCount();
-    TickType_t lastClickTick = 0;
+    int8_t last_delta_x = 0;
 
     FusionAhrs ahrs;
     FusionAhrsInitialise(&ahrs);
@@ -103,111 +115,103 @@ void mpu6050_task(void *p) {
         FusionAhrsUpdateNoMagnetometer(&ahrs, gyroscope, accelerometer, sample_rate);
 
         const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-        float pitch = euler.angle.pitch;
+        float roll = euler.angle.roll;
 
-        int8_t delta_x = (int8_t)(pitch * 2);
+        int8_t delta_x = (int8_t)(roll * 2);
 
         if (delta_x > 127) delta_x = 127;
         if (delta_x < -127) delta_x = -127;
 
-        xQueueSend(xQueueSteer, &delta_x, pdMS_TO_TICKS(sample_rate));
-        vTaskDelay(pdMS_TO_TICKS(sample_rate));
+        // Envia só se houve variação relevante
+        if (abs(delta_x - last_delta_x) >= TOLERANCIA) {
+            xQueueSend(xQueueSteer, &delta_x, 0);
+            last_delta_x = delta_x;
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
 void accel_task(void *p) {
     uint16_t data;
-
     uint16_t accel_antigo = 0;
 
     while (1) {
-        adc_select_input(1); //27
+        adc_select_input(1); // GPIO27
 
         const float conversion_factor = 3.3f / (1 << 12);
         uint16_t result = adc_read();
-        printf("Accel: Raw value: 0x%03x, voltage: %f V\n", result, result * conversion_factor);
-        data = result * conversion_factor;
+        data = (uint16_t)((result * conversion_factor / 3.3f) * 1000);
 
-        if (data != accel_antigo && accel_antigo != 0) {
+        if (abs((int)data - (int)accel_antigo) >= ANALOG_TOLERANCE) {
             xQueueSend(xQueueAccel, &data, pdMS_TO_TICKS(100));
+            accel_antigo = data;
         }
-        accel_antigo = data;
-        
-        vTaskDelay(pdMS_TO_TICKS(100));
+
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
 
 void break_task(void *p) {
     uint16_t data;
-
     uint16_t break_antigo = 0;
-    
+
     while (1) {
-        adc_select_input(0); //26?
+        adc_select_input(0); // GPIO26
 
         const float conversion_factor = 3.3f / (1 << 12);
         uint16_t result = adc_read();
-        printf("Break: Raw value: 0x%03x, voltage: %f V\n", result, result * conversion_factor);
-        data = result * conversion_factor;
+        data = (uint16_t)((result * conversion_factor / 3.3f) * 1000);
 
-        if (data != break_antigo && break_antigo != 0) {
-            xQueueSend(xQueueAccel, &data, pdMS_TO_TICKS(100));
+        if (abs((int)data - (int)break_antigo) >= ANALOG_TOLERANCE) {
+            xQueueSend(xQueueBreak, &data, pdMS_TO_TICKS(100));
+            break_antigo = data;
         }
-        break_antigo = data;
-        
-        vTaskDelay(pdMS_TO_TICKS(100));
+
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
 
 void uart_task(void *p) {
-    int8_t last_x = 0;
-    int8_t last_accel = 0;
-    int8_t last_break = 0;
-    int8_t data_steer;
-    int16_t data_accel;
-    int16_t data_break;
+    int8_t data_steer = 0;
+    int16_t data_accel = 0;
+    int16_t data_break = 0;
 
     uint8_t pacote[6];
+
+    pacote[0] = 0;
+    pacote[1] = 0;
+    pacote[2] = 0;
+    pacote[3] = 0;
+    pacote[4] = 0;
+    pacote[5] = 0xFF;
     
     while (true) {
-        pacote[0] = 0;
-        pacote[1] = 0;
-        pacote[2] = 0;
-        pacote[3] = 0;
-        pacote[4] = 0;
-        pacote[5] = 0xFF;
 
-        int steer = 0;
-        int accel = 0;
-        int breaK = 0;
-        if (xQueueReceive(xQueueSteer, &data_steer, pdMS_TO_TICKS(100))) {
+        bool has_data = false;
 
-            int8_t diff_x = data_steer.delta_x - last_x;
+        if (xQueueReceive(xQueueSteer, &data_steer, pdMS_TO_TICKS(5))) {
+            pacote[0] = (uint8_t) data_steer;
+            has_data = true;
+        }
 
-            if (abs(diff_x) >= TOLERANCIA) {
-                uint8_t pacote[2];
-                pacote[0] = (uint8_t) data_steer.delta_x;
-                
-                last_x = data_steer.delta_x;
-                steer = 1;
-            }
+        if (xQueueReceive(xQueueAccel, &data_accel, pdMS_TO_TICKS(0))) {
+            pacote[1] = (data_accel >> 8) & 0xFF;
+            pacote[2] = data_accel & 0xFF;
+            has_data = true;
         }
-        
-        if (xQueueReceive(xQueueAccel, &data_accel, pdMS_TO_TICKS(100))) {
-            pacote[1] = (data_accel >> 8) & 0xFF;    // accel high byte
-            pacote[2] = data_accel & 0xFF;           // accel low byte
-            accel = 1;
+
+        if (xQueueReceive(xQueueBreak, &data_break, pdMS_TO_TICKS(0))) {
+            pacote[3] = (data_break >> 8) & 0xFF;
+            pacote[4] = data_break & 0xFF;
+            has_data = true;
         }
-        
-        if (xQueueReceive(xQueueBreak, &data_break, pdMS_TO_TICKS(100))) {
-            pacote[3] = (data_break >> 8) & 0xFF;    // brake high byte
-            pacote[4] = data_break & 0xFF;           // brake low byte
-            breaK = 1;
-        }
-        
-        if (steer || accel || breaK) {
+
+        if (has_data) {
             uart_write_blocking(UART_ID, pacote, 6);
         }
+
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 

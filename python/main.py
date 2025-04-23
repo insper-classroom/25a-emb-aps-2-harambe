@@ -7,33 +7,83 @@ from tkinter import ttk
 from tkinter import messagebox
 from time import sleep
 
+TOLERANCIA = 10           # Tolerância mínima para o volante
+TOLERANCIA_PEDAL = 200   # Tolerância mínima para considerar pressão do pedal
 
-def move_mouse(x_value, y_value):
-    """Move o mouse de acordo com o eixo e valor recebidos."""
-    print('Mouse:', x_value, y_value)
-    pyautogui.moveRel(x_value, y_value)
+def press_key(key_states):
+    pyautogui.PAUSE = 0
+
+    if key_states["w"] == 1:
+        pyautogui.keyUp("s")
+        pyautogui.keyDown("w")
+    else:
+        pyautogui.keyUp("w")
+
+    if key_states["s"] == 1:
+        pyautogui.keyUp("w")
+        pyautogui.keyDown("s")
+    else:
+        pyautogui.keyUp("s")
+
+    if key_states["a"] == 1:
+        pyautogui.keyDown("a")
+        pyautogui.keyUp("d")
+    else:
+        pyautogui.keyUp("a")
+
+    if key_states["d"] == 1:
+        pyautogui.keyDown("d")
+        pyautogui.keyUp("a")
+    else:
+        pyautogui.keyUp("d")
 
 def controle(ser):
-    """Lê os sinais CLK e DT do encoder e atualiza o step_counter com base em transições de CLK."""
+    """Lê pacotes UART com dados de volante, acelerador e freio."""
+
+    key_states = {
+        'w': 0,
+        's': 0,
+        'a': 0,
+        'd': 0,
+    }
 
     while True:
-        pacote = ser.read(2)
-        if len(pacote) != 2:
-            continue
+        pacote = ser.read(6)
+        if len(pacote) != 6 or pacote[5] != 0xFF:
+            continue  # ignora pacotes incompletos ou inválidos
 
-        data_byte, end_byte = pacote
+        # Desempacotamento dos dados
+        direcao = int.from_bytes(pacote[0:1], byteorder='little', signed=True)
+        acelerador = int.from_bytes(pacote[1:3], byteorder='big', signed=False)
+        freio = int.from_bytes(pacote[3:5], byteorder='big', signed=False)
 
-        if end_byte != 0xFF:
-            continue  # ignora pacotes inválidos
+        print(f"Volante: {direcao} | Acelerador: {acelerador} | Freio: {freio}")
 
-        data_byte_signed = int.from_bytes(bytes([data_byte]), byteorder='little', signed=True)
+        if direcao > TOLERANCIA:
+            key_states["d"] = 1
+            key_states["a"] = 0
+        elif direcao < -TOLERANCIA:
+            key_states["a"] = 1
+            key_states["d"] = 0
+        else:
+            key_states["d"] = 0
+            key_states["a"] = 0
 
-        print("Step Counter:", data_byte_signed)
+        if acelerador > 100:
+            key_states["w"] = 1
+            key_states["s"] = 0
+        elif acelerador <= 100:
+            key_states["w"] = 0
 
-        sleep(0.001)
+        if freio > 100:
+            key_states["s"] = 1
+            key_states["w"] = 0
+        elif freio <= 100:
+            key_states["s"] = 0
 
+        press_key(key_states)
 
-
+        sleep(0.01)  # Delay leve para não travar o sistema
 
 def serial_ports():
     """Retorna uma lista das portas seriais disponíveis na máquina."""
