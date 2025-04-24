@@ -13,39 +13,73 @@
 #include "hardware/adc.h"
 #include "pico/stdlib.h"
 #include "Fusion.h"
-
-#define BUTTON1_GPIO 10
-#define BUTTON2_GPIO 11
-#define BUTTON3_GPIO 12
-#define BUTTON4_GPIO 13
+#include "hardware/gpio.h"
+#include "hc06.h"
 
 #define UART_ID uart0
 #define BAUD_RATE 115200
 #define UART_TX_PIN 0
 #define UART_RX_PIN 1
 
-#define I2C_SDA_GPIO 4
-#define I2C_SCL_GPIO 5
+#define I2C_SDA_GPIO 20 // ALTERADO
+#define I2C_SCL_GPIO 21 //EU ALTEREI ISSO!
 #define MPU_ADDRESS 0x68
 
 #define ANALOG_TOLERANCE 10
 #define TOLERANCIA 1
 
-typedef enum {
-    BUTTON_1,
-    BUTTON_2,
-    BUTTON_3,
-    BUTTON_4
-} ButtonId;
-
 QueueHandle_t xQueueSteer;
 QueueHandle_t xQueueAccel;
 QueueHandle_t xQueueBreak;
+QueueHandle_t xQueueButtons;
+
+typedef struct button {
+    int square;
+    int x;
+    int triangle;
+    int circle;
+} button_id;
+
+const int BTN_TRIANGLE = 21;
+const int BTN_X = 20;
+const int BTN_SQUARE = 19;
+const int BTN_CIRCLE = 18;
 
 void init_uart() {
     uart_init(UART_ID, BAUD_RATE);
     gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
+}
+
+
+void btn_callback(uint gpio, uint32_t events) {
+    button_id button;
+    button.circle = 0;
+    button.triangle = 0;
+    button.square = 0;
+    button.x = 0;
+    
+    if (gpio == BTN_TRIANGLE && events == 0x4) {     
+        button.triangle = 1;
+    } if (gpio == BTN_X && events == 0x4) {
+        button.x = 1; 
+    } if (gpio == BTN_SQUARE && events == 0x4) {
+        button.square = 1;
+    } if (gpio == BTN_CIRCLE && events == 0x4) {
+        button.circle = 1;
+    }
+    
+    xQueueSendFromISR(xQueueButtons, &button, pdMS_TO_TICKS(100));
+}
+
+void init_buttons() {
+    const uint buttons[] = {BTN_TRIANGLE, BTN_X, BTN_SQUARE, BTN_CIRCLE};
+    for (int i = 0; i < 4; i++) {
+        gpio_init(buttons[i]);
+        gpio_set_dir(buttons[i], GPIO_IN);
+        gpio_pull_up(buttons[i]);
+        gpio_set_irq_enabled_with_callback(buttons[i], GPIO_IRQ_EDGE_FALL, true, &btn_callback);
+    }
 }
 
 static void mpu6050_reset() {
@@ -116,6 +150,7 @@ void mpu6050_task(void *p) {
 
         const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
         float roll = euler.angle.roll;
+        // float pitch = euler.angle.pitch;
 
         int8_t delta_x = (int8_t)(roll * 2);
 
@@ -167,7 +202,7 @@ void break_task(void *p) {
             xQueueSend(xQueueBreak, &data, pdMS_TO_TICKS(100));
             break_antigo = data;
         }
-
+        
         vTaskDelay(pdMS_TO_TICKS(50));
     }
 }
@@ -176,15 +211,20 @@ void uart_task(void *p) {
     int8_t data_steer = 0;
     int16_t data_accel = 0;
     int16_t data_break = 0;
+    button_id btn;
 
-    uint8_t pacote[6];
+    uint8_t pacote[10];
 
     pacote[0] = 0;
     pacote[1] = 0;
     pacote[2] = 0;
     pacote[3] = 0;
     pacote[4] = 0;
-    pacote[5] = 0xFF;
+    pacote[5] = 0;
+    pacote[6] = 0;
+    pacote[7] = 0;
+    pacote[8] = 0;
+    pacote[9] = 0xFF;
     
     while (true) {
 
@@ -195,30 +235,56 @@ void uart_task(void *p) {
             has_data = true;
         }
 
-        if (xQueueReceive(xQueueAccel, &data_accel, pdMS_TO_TICKS(0))) {
+        if (xQueueReceive(xQueueAccel, &data_accel, pdMS_TO_TICKS(5))) {
             pacote[1] = (data_accel >> 8) & 0xFF;
             pacote[2] = data_accel & 0xFF;
             has_data = true;
         }
 
-        if (xQueueReceive(xQueueBreak, &data_break, pdMS_TO_TICKS(0))) {
+        if (xQueueReceive(xQueueBreak, &data_break, pdMS_TO_TICKS(5))) {
             pacote[3] = (data_break >> 8) & 0xFF;
             pacote[4] = data_break & 0xFF;
             has_data = true;
         }
+        
+        if (xQueueReceive(xQueueButtons, &btn, pdMS_TO_TICKS(5))) {
+            if (btn.x) {
+                pacote[5] = (uint8_t) btn.x;
+            } if (btn.triangle) {
+                pacote[6] = (uint8_t) btn.triangle;
+            } if (btn.circle) {
+                pacote[7] = (uint8_t) btn.circle;
+            } if (btn.square) {
+                pacote[8] = (uint8_t) btn.square;
+            }
+            has_data = true;
+        }
 
         if (has_data) {
-            uart_write_blocking(UART_ID, pacote, 6);
+            uart_write_blocking(UART_ID, pacote, 10);
         }
 
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
+
+void hc06_task(void *p) {
+    uart_init(HC06_UART_ID, HC06_BAUD_RATE);
+    gpio_set_function(HC06_TX_PIN, GPIO_FUNC_UART);
+    gpio_set_function(HC06_RX_PIN, GPIO_FUNC_UART);
+    hc06_init("FORZA", "edu123");
+
+    while (true) {
+        uart_puts(HC06_UART_ID, "FUNCIONA!");
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
+
 int main() {
     stdio_init_all();
     init_uart();
-
+    init_buttons();
     adc_init();
     adc_gpio_init(27);
     adc_gpio_init(26);
@@ -226,11 +292,13 @@ int main() {
     xQueueSteer = xQueueCreate(32, sizeof(int8_t));
     xQueueAccel = xQueueCreate(32, sizeof(int16_t));
     xQueueBreak = xQueueCreate(32, sizeof(int16_t));
-
-    xTaskCreate(mpu6050_task, "mpu6050_Task", 8192, NULL, 1, NULL);
-    xTaskCreate(accel_task, "accel_Task", 8192, NULL, 1, NULL);
-    xTaskCreate(break_task, "break_Task", 8192, NULL, 1, NULL);
-    xTaskCreate(uart_task, "uart_Task", 8192, NULL, 1, NULL);
+    xQueueButtons = xQueueCreate(32, sizeof(button_id));
+    
+    xTaskCreate(hc06_task, "UART_Task 1", 4096, NULL, 1, NULL);
+    // xTaskCreate(mpu6050_task, "mpu6050_Task", 8192, NULL, 1, NULL);
+    // xTaskCreate(accel_task, "accel_Task", 8192, NULL, 1, NULL);
+    // xTaskCreate(break_task, "break_Task", 8192, NULL, 1, NULL);
+    // xTaskCreate(uart_task, "uart_Task", 8192, NULL, 1, NULL);
 
     vTaskStartScheduler();
 

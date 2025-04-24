@@ -37,6 +37,22 @@ def press_key(key_states):
     else:
         pyautogui.keyUp("d")
 
+    if key_states["1"]:
+        pyautogui.keyDown("1")
+        pyautogui.keyUp("1")
+        
+    if key_states["2"]:
+        pyautogui.keyDown("2")
+        pyautogui.keyUp("2")
+
+    if key_states["3"]:
+        pyautogui.keyDown("3")
+        pyautogui.keyUp("3")
+
+    if key_states["4"]:
+        pyautogui.keyDown("4")
+        pyautogui.keyUp("4")
+
 def controle(ser):
     """Lê pacotes UART com dados de volante, acelerador e freio."""
 
@@ -45,19 +61,26 @@ def controle(ser):
         's': 0,
         'a': 0,
         'd': 0,
+        '1': 0,
+        '2': 0,
+        '3': 0,
+        '4': 0
     }
 
     while True:
-        pacote = ser.read(6)
-        if len(pacote) != 6 or pacote[5] != 0xFF:
+        pacote = ser.read(10)
+        if len(pacote) != 10 or pacote[9] != 0xFF:
             continue  # ignora pacotes incompletos ou inválidos
 
-        # Desempacotamento dos dados
         direcao = int.from_bytes(pacote[0:1], byteorder='little', signed=True)
         acelerador = int.from_bytes(pacote[1:3], byteorder='big', signed=False)
         freio = int.from_bytes(pacote[3:5], byteorder='big', signed=False)
+        btn_x = pacote[5]
+        btn_triangle = pacote[6]
+        btn_circle = pacote[7]
+        btn_square = pacote[8]
 
-        print(f"Volante: {direcao} | Acelerador: {acelerador} | Freio: {freio}")
+        print(f"Volante: {direcao} | Acelerador: {acelerador} | Freio: {freio} | X: {btn_x} | Triangle: {btn_triangle} | Circle: {btn_circle} | Square: {btn_square}")
 
         if direcao > TOLERANCIA:
             key_states["d"] = 1
@@ -81,7 +104,12 @@ def controle(ser):
         elif freio <= 100:
             key_states["s"] = 0
 
-        press_key(key_states)
+        key_states["1"] = btn_x
+        key_states["2"] = btn_square
+        key_states["3"] = btn_triangle
+        key_states["4"] = btn_circle
+
+        # press_key(key_states)
 
         sleep(0.01)  # Delay leve para não travar o sistema
 
