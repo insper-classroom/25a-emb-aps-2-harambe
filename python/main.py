@@ -1,107 +1,117 @@
 import sys
 import glob
 import serial
+import pyautogui
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
-import pyautogui
+from time import sleep
 
-pyautogui.PAUSE = 0
+TOLERANCIA = 10           # Tolerância mínima para o volante
+TOLERANCIA_PEDAL = 200   # Tolerância mínima para considerar pressão do pedal
 
-current_keys = {'w': False, 'a': False, 's': False, 'd': False}
+def press_key(key_states):
+    pyautogui.PAUSE = 0
 
-
-def movement(axis, value):
-    if axis == 0:
-        tecla_para_cima = 'w'
-        tecla_para_baixo = 's'
-    elif axis == 1:
-        tecla_para_cima = 'd'
-        tecla_para_baixo = 'a'
+    if key_states["w"] == 1:
+        pyautogui.keyUp("s")
+        pyautogui.keyDown("w")
     else:
-        return
+        pyautogui.keyUp("w")
 
-    if value == 1:
-        if not current_keys[tecla_para_cima]:
-            pyautogui.keyDown(tecla_para_cima)
-            current_keys[tecla_para_cima] = True
-
-        if current_keys[tecla_para_baixo]:
-            pyautogui.keyUp(tecla_para_baixo)
-            current_keys[tecla_para_baixo] = False
-
-    elif value == 2:
-        if not current_keys[tecla_para_baixo]:
-            pyautogui.keyDown(tecla_para_baixo)
-            current_keys[tecla_para_baixo] = True
-
-        if current_keys[tecla_para_cima]:
-            pyautogui.keyUp(tecla_para_cima)
-            current_keys[tecla_para_cima] = False
-
+    if key_states["s"] == 1:
+        pyautogui.keyUp("w")
+        pyautogui.keyDown("s")
     else:
-        if current_keys[tecla_para_cima]:
-            pyautogui.keyUp(tecla_para_cima)
-            current_keys[tecla_para_cima] = False
+        pyautogui.keyUp("s")
 
-        if current_keys[tecla_para_baixo]:
-            pyautogui.keyUp(tecla_para_baixo)
-            current_keys[tecla_para_baixo] = False
+    if key_states["a"] == 1:
+        pyautogui.keyDown("a")
+        pyautogui.keyUp("d")
+    else:
+        pyautogui.keyUp("a")
 
+    if key_states["d"] == 1:
+        pyautogui.keyDown("d")
+        pyautogui.keyUp("a")
+    else:
+        pyautogui.keyUp("d")
 
-def aim(axis, value):
-    if axis == 0:
-        pyautogui.moveRel(-value, 0)
-    if axis == 1:
-        pyautogui.moveRel(0, value)
+    if key_states["1"]:
+        pyautogui.keyDown("1")
+        pyautogui.keyUp("1")
+        
+    if key_states["2"]:
+        pyautogui.keyDown("2")
+        pyautogui.keyUp("2")
 
+    if key_states["3"]:
+        pyautogui.keyDown("3")
+        pyautogui.keyUp("3")
 
-def action(value):
-    """
-    Executa uma ação com base no valor recebido.
-    1: Clique esquerdo
-    2: Clique direito
-    3: Interagir (E)
-    4: Pular (espaço)
-    """
-
-    if value == 1:
-        pyautogui.click()
-    elif value == 2:
-        pyautogui.click(button='right')
-    elif value == 3:
-        pyautogui.press('e')
-    elif value == 4:
-        pyautogui.press('space')
-
+    if key_states["4"]:
+        pyautogui.keyDown("4")
+        pyautogui.keyUp("4")
 
 def controle(ser):
-    """
-    Loop principal que lê bytes da porta serial em loop infinito.
-    Aguarda o byte 0xFF e então lê 6 bytes: 
-    axis_aim (1 byte) + valor_aim (2 bytes) + axis_movement (1 byte) + valor_movement (1 byte) + action (1 byte)
-    """
+    """Lê pacotes UART com dados de volante, acelerador e freio."""
+
+    key_states = {
+        'w': 0,
+        's': 0,
+        'a': 0,
+        'd': 0,
+        '1': 0,
+        '2': 0,
+        '3': 0,
+        '4': 0
+    }
+
     while True:
-        # Aguardar byte de sincronização
-        sync_byte = ser.read(size=1)
-        if not sync_byte:
-            continue
-        if sync_byte[0] == 0xFF:
-            # Ler 6 bytes (axis_aim + valor_aim(2b) + axis_movement + valor_movement(1b) + action(1b))
-            data = ser.read(size=6)
+        pacote = ser.read(10)
+        if len(pacote) != 10 or pacote[9] != 0xFF:
+            continue  # ignora pacotes incompletos ou inválidos
 
-            if len(data) < 6:
-                continue
+        direcao = int.from_bytes(pacote[0:1], byteorder='little', signed=True)
+        acelerador = int.from_bytes(pacote[1:3], byteorder='big', signed=False)
+        freio = int.from_bytes(pacote[3:5], byteorder='big', signed=False)
+        btn_x = pacote[5]
+        btn_triangle = pacote[6]
+        btn_circle = pacote[7]
+        btn_square = pacote[8]
 
-            axis_aim, value_aim, axis_movement, value_movement, action_value = parse_data(
-                data)
-            movement(axis_movement, value_movement)
-            aim(axis_aim, value_aim)
+        print(f"Volante: {direcao} | Acelerador: {acelerador} | Freio: {freio} | X: {btn_x} | Triangle: {btn_triangle} | Circle: {btn_circle} | Square: {btn_square}")
 
-            # Processar a ação se o valor não for zero
-            if action_value > 0:
-                action(action_value)
+        if direcao > TOLERANCIA:
+            key_states["d"] = 1
+            key_states["a"] = 0
+        elif direcao < -TOLERANCIA:
+            key_states["a"] = 1
+            key_states["d"] = 0
+        else:
+            key_states["d"] = 0
+            key_states["a"] = 0
 
+        if acelerador > 100:
+            key_states["w"] = 1
+            key_states["s"] = 0
+        elif acelerador <= 100:
+            key_states["w"] = 0
+
+        if freio > 100:
+            key_states["s"] = 1
+            key_states["w"] = 0
+        elif freio <= 100:
+            key_states["s"] = 0
+
+        key_states["1"] = btn_x
+        key_states["2"] = btn_square
+        key_states["3"] = btn_triangle
+        key_states["4"] = btn_circle
+
+        # press_key(key_states)
+
+        sleep(0.01)  # Delay leve para não travar o sistema
 
 def serial_ports():
     """Retorna uma lista das portas seriais disponíveis na máquina."""
@@ -123,8 +133,7 @@ def serial_ports():
         # macOS
         ports = glob.glob('/dev/tty.*')
     else:
-        raise EnvironmentError(
-            'Plataforma não suportada para detecção de portas seriais.')
+        raise EnvironmentError('Plataforma não suportada para detecção de portas seriais.')
 
     result = []
     for port in ports:
@@ -136,32 +145,17 @@ def serial_ports():
             pass
     return result
 
-
-def parse_data(data):
-    """Interpreta os dados recebidos do buffer (axis_aim + valor_aim + axis_movement + valor_movement + action)."""
-    axis_aim = data[0]
-    value_aim = int.from_bytes(data[1:3], byteorder='little', signed=True)
-    axis_movement = data[3]
-    value_movement = data[4]
-    action_value = data[5]
-
-    return axis_aim, value_aim, axis_movement, value_movement, action_value
-
-
 def conectar_porta(port_name, root, botao_conectar, status_label, mudar_cor_circulo):
     """Abre a conexão com a porta selecionada e inicia o loop de leitura."""
     if not port_name:
-        messagebox.showwarning(
-            "Aviso", "Selecione uma porta serial antes de conectar.")
+        messagebox.showwarning("Aviso", "Selecione uma porta serial antes de conectar.")
         return
 
     try:
         ser = serial.Serial(port_name, 115200, timeout=1)
-        status_label.config(
-            text=f"Conectado em {port_name}", foreground="green")
+        status_label.config(text=f"Conectado em {port_name}", foreground="green")
         mudar_cor_circulo("green")
-        # Update button text to indicate connection
-        botao_conectar.config(text="Conectado")
+        botao_conectar.config(text="Conectado")  # Update button text to indicate connection
         root.update()
 
         # Inicia o loop de leitura (bloqueante).
@@ -170,14 +164,12 @@ def conectar_porta(port_name, root, botao_conectar, status_label, mudar_cor_circ
     except KeyboardInterrupt:
         print("Encerrando via KeyboardInterrupt.")
     except Exception as e:
-        messagebox.showerror(
-            "Erro de Conexão", f"Não foi possível conectar em {port_name}.\nErro: {e}")
+        messagebox.showerror("Erro de Conexão", f"Não foi possível conectar em {port_name}.\nErro: {e}")
         mudar_cor_circulo("red")
     finally:
         ser.close()
         status_label.config(text="Conexão encerrada.", foreground="red")
         mudar_cor_circulo("red")
-
 
 def criar_janela():
     root = tk.Tk()
@@ -194,8 +186,7 @@ def criar_janela():
     style = ttk.Style(root)
     style.theme_use("clam")
     style.configure("TFrame", background=dark_bg)
-    style.configure("TLabel", background=dark_bg,
-                    foreground=dark_fg, font=("Segoe UI", 11))
+    style.configure("TLabel", background=dark_bg, foreground=dark_fg, font=("Segoe UI", 11))
     style.configure("TButton", font=("Segoe UI", 10, "bold"),
                     foreground=dark_fg, background="#444444", borderwidth=0)
     style.map("TButton", background=[("active", "#555555")])
@@ -215,8 +206,7 @@ def criar_janela():
     frame_principal = ttk.Frame(root, padding="20")
     frame_principal.pack(expand=True, fill="both")
 
-    titulo_label = ttk.Label(
-        frame_principal, text="Controle de Mouse", font=("Segoe UI", 14, "bold"))
+    titulo_label = ttk.Label(frame_principal, text="Controle de Mouse", font=("Segoe UI", 14, "bold"))
     titulo_label.pack(pady=(0, 10))
 
     porta_var = tk.StringVar(value="")
@@ -225,8 +215,7 @@ def criar_janela():
         frame_principal,
         text="Conectar e Iniciar Leitura",
         style="Accent.TButton",
-        command=lambda: conectar_porta(
-            porta_var.get(), root, botao_conectar, status_label, mudar_cor_circulo)
+        command=lambda: conectar_porta(porta_var.get(), root, botao_conectar, status_label, mudar_cor_circulo)
     )
     botao_conectar.pack(pady=10)
 
@@ -248,10 +237,8 @@ def criar_janela():
     port_dropdown.grid(row=0, column=1, padx=10)
 
     # Right: Status circle (canvas)
-    circle_canvas = tk.Canvas(footer_frame, width=20,
-                              height=20, highlightthickness=0, bg=dark_bg)
-    circle_item = circle_canvas.create_oval(
-        2, 2, 18, 18, fill="red", outline="")
+    circle_canvas = tk.Canvas(footer_frame, width=20, height=20, highlightthickness=0, bg=dark_bg)
+    circle_item = circle_canvas.create_oval(2, 2, 18, 18, fill="red", outline="")
     circle_canvas.grid(row=0, column=2, sticky="e")
 
     footer_frame.columnconfigure(1, weight=1)
@@ -260,7 +247,6 @@ def criar_janela():
         circle_canvas.itemconfig(circle_item, fill=cor)
 
     root.mainloop()
-
 
 if __name__ == "__main__":
     criar_janela()

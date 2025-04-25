@@ -4,7 +4,7 @@ import serial
 import time
 import random
 
-ser = serial.Serial('/dev/pts/0', 115200)
+ser = serial.Serial('/dev/ttyACM0', 115200)
 
 def send_movement(axis, value):
     """Send a movement command in the specified format: axis (8 bits), value (8 bits), end-of-package indicator (8 bits)."""
