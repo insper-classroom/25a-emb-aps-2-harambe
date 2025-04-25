@@ -14,8 +14,8 @@
 #define HC06_UART_ID uart1
 #define HC06_BAUD_RATE 9600
 #define HC06_STATE_PIN 4
-#define HC06_RX_PIN 5
-#define HC06_TX_PIN 4
+#define HC06_RX_PIN 9
+#define HC06_TX_PIN 8
 #define HC06_ENABLE_PIN 6
 
 bool hc06_check_connection();
@@ -23,6 +23,5 @@ bool hc06_set_name(char name[]);
 bool hc06_set_pin(char pin[]);
 bool hc06_set_at_mode(int on);
 bool hc06_init(char name[], char pin[]);
-
 
 #endif // HC06_H_

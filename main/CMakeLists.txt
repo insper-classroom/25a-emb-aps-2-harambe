@@ -9,6 +9,7 @@ target_link_libraries(pico_emb
     pico_stdlib
     hardware_i2c
     Fusion
+    hardware_uart
     hardware_adc
     oled1_lib
     freertos

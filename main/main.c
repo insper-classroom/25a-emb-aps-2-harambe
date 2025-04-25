@@ -270,14 +270,15 @@ void uart_task(void *p) {
 
 
 void hc06_task(void *p) {
-    uart_init(HC06_UART_ID, HC06_BAUD_RATE);
-    gpio_set_function(HC06_TX_PIN, GPIO_FUNC_UART);
-    gpio_set_function(HC06_RX_PIN, GPIO_FUNC_UART);
-    hc06_init("FORZA", "edu123");
+    // uart_init(HC06_UART_ID, HC06_BAUD_RATE);
+    // gpio_set_function(HC06_TX_PIN, GPIO_FUNC_UART);
+    // gpio_set_function(HC06_RX_PIN, GPIO_FUNC_UART);
+    // hc06_init("forza4", "1234");
 
     while (true) {
-        uart_puts(HC06_UART_ID, "FUNCIONA!");
-        vTaskDelay(pdMS_TO_TICKS(100));
+        printf("oi\n");
+        // uart_puts(HC06_UART_ID, "FUNCIONA!\n");
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
@@ -294,12 +295,11 @@ int main() {
     xQueueBreak = xQueueCreate(32, sizeof(int16_t));
     xQueueButtons = xQueueCreate(32, sizeof(button_id));
     
-    xTaskCreate(hc06_task, "UART_Task 1", 4096, NULL, 1, NULL);
+    xTaskCreate(hc06_task, "UART_Task 1", 8192, NULL, 1, NULL);
     // xTaskCreate(mpu6050_task, "mpu6050_Task", 8192, NULL, 1, NULL);
     // xTaskCreate(accel_task, "accel_Task", 8192, NULL, 1, NULL);
     // xTaskCreate(break_task, "break_Task", 8192, NULL, 1, NULL);
     // xTaskCreate(uart_task, "uart_Task", 8192, NULL, 1, NULL);
-
     vTaskStartScheduler();
 
     while (true);
