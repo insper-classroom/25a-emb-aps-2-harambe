@@ -1,37 +1,63 @@
-# Controle para Jogo - Forza
+# Projeto ATLAS - Portal Gun para Portal 2
 
-Este projeto visa criar um controle customizado para o jogo Forza, utilizando um volante e um pedal com freio e acelerador. O controle se comunica com o computador via protocolo UART, proporcionando uma experiência de simulação realista.
-## Ideia do Controle
+![image](https://github.com/user-attachments/assets/11fefe4f-9b9f-410f-acf5-e8db026cf349)
 
-O controle será composto por um volante e dois pedais (freio e acelerador), permitindo que o jogador tenha uma imersão total durante o jogo. O volante será usado para controlar a direção do veículo, enquanto os pedais serão usados para controlar a velocidade e a frenagem.
-## Inputs e Outputs
-### Inputs:
+## 🎮 Jogo
 
-    Volante: Detecção da rotação do volante (ângulo).
+**Portal 2** é um jogo de puzzle em primeira pessoa desenvolvido pela Valve. O jogador utiliza a Portal Gun para criar portais e resolver desafios baseados em física.
 
-    Pedal Acelerador: Leitura da posição do pedal de acelerador.
+## 🔥 Ideia do Controle
 
-    Pedal de Freio: Leitura da posição do pedal de freio.
+O objetivo deste projeto é criar um protótipo funcional de um controle customizado inspirado na Portal Gun. O controle será utilizado para jogar Portal 2 e contará com botões físicos e sensores para uma experiência mais imersiva.
 
-### Outputs:
+## 🖧 Inputs e Outputs
 
-    Feedback de Força: Feedback tátil baseado em informações do jogo.
+### **Inputs (Sensores e Controles)**
 
-    LEDs: Indicadores visuais para status do controle (conectado/desconectado).
+![image](./.github/portal_gun_controller.png)
 
-## Protocolo Utilizado
+- **Botões físicos:**
+  - Pular
+  - Atirar 1
+  - Atirar 2
+  - Pausar
+- **Analógicos:**
+  - Controle de movimento do personagem (joystick)
+  - Controle de mira (IMU ou joystick)
 
-A comunicação entre o controle e o jogo será feita através do protocolo UART (Universal Asynchronous Receiver-Transmitter). O protocolo UART será utilizado para enviar dados dos sensores do volante e pedais para o computador. O envio será realizado em pacotes de dados que incluem informações sobre a rotação do volante e a posição dos pedais.
+## 📡 Protocolo Utilizado
 
-## Diagrama de Blocos Explicativo do Firmware
+(Aqui será incluído o protocolo que será utilizado)
 
-![Diagrama:](public/diagrama.drawio.png)
+## 🛠️ Diagrama de Blocos
 
-## Proposta do Controle:
+![image](./.github/diagram.png)
 
-![Proposta:](public/volante.jpeg)
+### **Estrutura do Firmware**
 
+- **Tasks:**
+  - Leitura do joystick (`joystick_task`)
+  - Processamento dos botões (`process_input_task`)
+  - Leitura da IMU (`imu_task`)
+- **Filas:**
+  - Eventos de entrada (botões e sensores)
+    - `xInputQueue`
+    - `xMovementQueue`
+    - `xActionQueue`
+    - `xAimQueue`
+- **Interrupções (IRQs):**
+  - Detecção de pressionamento de botões
 
-## Controle Real:
+## 🖼️ Imagens do Controle
 
-![Controle Real:](public/volante_real.jpeg)
+(Aqui serão inseridas imagens do protótipo)
+
+## 🔗 Links Úteis
+
+- [Especificações da Raspberry Pi Pico](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html)
+- [Documentação Bluetooth HID](https://www.bluetooth.com/specifications/profiles-overview/)
+- [Portal gun pieces](https://www.thingiverse.com/thing:26027)
+
+---
+Este projeto é um protótipo experimental e está em desenvolvimento contínuo. Contribuições e sugestões são bem-vindas! 🚀
+

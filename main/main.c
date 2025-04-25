@@ -16,7 +16,7 @@
 #include "hardware/gpio.h"
 #include "hc06.h"
 
-#define UART_ID uart0
+#define UART_ID uart1
 #define BAUD_RATE 115200
 #define UART_TX_PIN 0
 #define UART_RX_PIN 1
@@ -44,13 +44,6 @@ const int BTN_TRIANGLE = 21;
 const int BTN_X = 20;
 const int BTN_SQUARE = 19;
 const int BTN_CIRCLE = 18;
-
-void init_uart() {
-    uart_init(UART_ID, BAUD_RATE);
-    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
-    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
-}
-
 
 void btn_callback(uint gpio, uint32_t events) {
     button_id button;
@@ -268,23 +261,21 @@ void uart_task(void *p) {
     }
 }
 
-
 void hc06_task(void *p) {
-    // uart_init(HC06_UART_ID, HC06_BAUD_RATE);
-    // gpio_set_function(HC06_TX_PIN, GPIO_FUNC_UART);
-    // gpio_set_function(HC06_RX_PIN, GPIO_FUNC_UART);
-    // hc06_init("forza4", "1234");
+    uart_init(HC06_UART_ID, 9600);
+    gpio_set_function(HC06_TX_PIN, GPIO_FUNC_UART); //TX
+    gpio_set_function(HC06_RX_PIN, GPIO_FUNC_UART); //RX
+    hc06_init("forza12", "1234");
 
     while (true) {
-        printf("oi\n");
-        // uart_puts(HC06_UART_ID, "FUNCIONA!\n");
+        printf("enviando!");
+        uart_puts(HC06_UART_ID, "FUNCIONA!\n");
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
 int main() {
     stdio_init_all();
-    init_uart();
     init_buttons();
     adc_init();
     adc_gpio_init(27);
