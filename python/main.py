@@ -92,16 +92,16 @@ def controle(ser):
             key_states["d"] = 0
             key_states["a"] = 0
 
-        if acelerador > 100:
+        if acelerador > 600:
             key_states["w"] = 1
             key_states["s"] = 0
-        elif acelerador <= 100:
+        elif acelerador <= 600:
             key_states["w"] = 0
 
-        if freio > 100:
+        if freio > 600:
             key_states["s"] = 1
             key_states["w"] = 0
-        elif freio <= 100:
+        elif freio <= 600:
             key_states["s"] = 0
 
         key_states["1"] = btn_x
@@ -109,7 +109,7 @@ def controle(ser):
         key_states["3"] = btn_triangle
         key_states["4"] = btn_circle
 
-        # press_key(key_states)
+        press_key(key_states)
 
         sleep(0.01)  # Delay leve para não travar o sistema
 

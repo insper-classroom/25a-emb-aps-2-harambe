@@ -40,10 +40,10 @@ typedef struct button {
     int circle;
 } button_id;
 
-const int BTN_TRIANGLE = 21;
-const int BTN_X = 20;
-const int BTN_SQUARE = 19;
-const int BTN_CIRCLE = 18;
+const int BTN_TRIANGLE = 10;
+const int BTN_X = 11;
+const int BTN_SQUARE = 12;
+const int BTN_CIRCLE = 13;
 
 void init_uart() {
     uart_init(UART_ID, BAUD_RATE);
@@ -62,14 +62,15 @@ void btn_callback(uint gpio, uint32_t events) {
     if (gpio == BTN_TRIANGLE && events == 0x4) {     
         button.triangle = 1;
     } if (gpio == BTN_X && events == 0x4) {
-        button.x = 1; 
+        button.x = 1;  
     } if (gpio == BTN_SQUARE && events == 0x4) {
         button.square = 1;
     } if (gpio == BTN_CIRCLE && events == 0x4) {
         button.circle = 1;
     }
     
-    xQueueSendFromISR(xQueueButtons, &button, pdMS_TO_TICKS(100));
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    xQueueSendFromISR(xQueueButtons, &button, &xHigherPriorityTaskWoken);    
 }
 
 void init_buttons() {
@@ -152,11 +153,12 @@ void mpu6050_task(void *p) {
         float roll = euler.angle.roll;
         // float pitch = euler.angle.pitch;
 
-        int8_t delta_x = (int8_t)(roll * 2);
+        int8_t delta_x = (int8_t)(roll * 0.3);
 
         if (delta_x > 127) delta_x = 127;
         if (delta_x < -127) delta_x = -127;
 
+        // printf("delta: %d\n", delta_x);
         // Envia só se houve variação relevante
         if (abs(delta_x - last_delta_x) >= TOLERANCIA) {
             xQueueSend(xQueueSteer, &delta_x, 0);
@@ -248,6 +250,7 @@ void uart_task(void *p) {
         }
         
         if (xQueueReceive(xQueueButtons, &btn, pdMS_TO_TICKS(5))) {
+            // printf("btn.x: %d\n", btn.x);
             if (btn.x) {
                 pacote[5] = (uint8_t) btn.x;
             } if (btn.triangle) {
@@ -263,6 +266,11 @@ void uart_task(void *p) {
         if (has_data) {
             uart_write_blocking(UART_ID, pacote, 10);
         }
+
+        pacote[5] = 0;
+        pacote[6] = 0;
+        pacote[7] = 0;
+        pacote[8] = 0;
 
         vTaskDelay(pdMS_TO_TICKS(10));
     }
@@ -297,8 +305,8 @@ int main() {
     
     // xTaskCreate(hc06_task, "UART_Task 1", 8192, NULL, 1, NULL);
     xTaskCreate(mpu6050_task, "mpu6050_Task", 8192, NULL, 1, NULL);
-    // xTaskCreate(accel_task, "accel_Task", 8192, NULL, 1, NULL);
-    // xTaskCreate(break_task, "break_Task", 8192, NULL, 1, NULL);
+    xTaskCreate(accel_task, "accel_Task", 8192, NULL, 1, NULL);
+    xTaskCreate(break_task, "break_Task", 8192, NULL, 1, NULL);
     xTaskCreate(uart_task, "uart_Task", 8192, NULL, 1, NULL);
     vTaskStartScheduler();
 
