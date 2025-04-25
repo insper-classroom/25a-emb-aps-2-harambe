@@ -295,11 +295,11 @@ int main() {
     xQueueBreak = xQueueCreate(32, sizeof(int16_t));
     xQueueButtons = xQueueCreate(32, sizeof(button_id));
     
-    xTaskCreate(hc06_task, "UART_Task 1", 8192, NULL, 1, NULL);
-    // xTaskCreate(mpu6050_task, "mpu6050_Task", 8192, NULL, 1, NULL);
+    // xTaskCreate(hc06_task, "UART_Task 1", 8192, NULL, 1, NULL);
+    xTaskCreate(mpu6050_task, "mpu6050_Task", 8192, NULL, 1, NULL);
     // xTaskCreate(accel_task, "accel_Task", 8192, NULL, 1, NULL);
     // xTaskCreate(break_task, "break_Task", 8192, NULL, 1, NULL);
-    // xTaskCreate(uart_task, "uart_Task", 8192, NULL, 1, NULL);
+    xTaskCreate(uart_task, "uart_Task", 8192, NULL, 1, NULL);
     vTaskStartScheduler();
 
     while (true);
