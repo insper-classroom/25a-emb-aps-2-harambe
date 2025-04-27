@@ -153,10 +153,10 @@ void mpu6050_task(void *p) {
         float roll = euler.angle.roll;
         // float pitch = euler.angle.pitch;
 
-        int8_t delta_x = (int8_t)(roll * 0.3);
+        int8_t delta_x = (int8_t)(roll * 0.5);
 
-        if (delta_x > 127) delta_x = 127;
-        if (delta_x < -127) delta_x = -127;
+        if (delta_x > 40) delta_x = 40;
+        if (delta_x < -40) delta_x = -40;
 
         // printf("delta: %d\n", delta_x);
         // Envia só se houve variação relevante

@@ -53,6 +53,11 @@ def press_key(key_states):
         pyautogui.keyDown("4")
         pyautogui.keyUp("4")
 
+    # pyautogui.keyUp("w")
+    # pyautogui.keyUp("a")
+    # pyautogui.keyUp("s")
+    # pyautogui.keyUp("d")
+    
 def controle(ser):
     """Lê pacotes UART com dados de volante, acelerador e freio."""
 
@@ -73,8 +78,8 @@ def controle(ser):
             continue  # ignora pacotes incompletos ou inválidos
 
         direcao = int.from_bytes(pacote[0:1], byteorder='little', signed=True)
-        acelerador = int.from_bytes(pacote[1:3], byteorder='big', signed=False)
-        freio = int.from_bytes(pacote[3:5], byteorder='big', signed=False)
+        freio = int.from_bytes(pacote[1:3], byteorder='big', signed=False)
+        acelerador = int.from_bytes(pacote[3:5], byteorder='big', signed=False)
         btn_x = pacote[5]
         btn_triangle = pacote[6]
         btn_circle = pacote[7]
@@ -83,14 +88,14 @@ def controle(ser):
         print(f"Volante: {direcao} | Acelerador: {acelerador} | Freio: {freio} | X: {btn_x} | Triangle: {btn_triangle} | Circle: {btn_circle} | Square: {btn_square}")
 
         if direcao > TOLERANCIA:
-            key_states["d"] = 1
-            key_states["a"] = 0
-        elif direcao < -TOLERANCIA:
+            key_states["d"] = 0
             key_states["a"] = 1
-            key_states["d"] = 0
-        else:
-            key_states["d"] = 0
+        elif direcao < -TOLERANCIA:
             key_states["a"] = 0
+            key_states["d"] = 1
+        elif direcao < TOLERANCIA and direcao > -TOLERANCIA:
+            key_states["a"] = 0
+            key_states["d"] = 0
 
         if acelerador > 600:
             key_states["w"] = 1
