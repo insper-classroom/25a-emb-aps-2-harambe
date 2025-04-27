@@ -215,25 +215,24 @@ void uart_task(void *p) {
     int16_t data_break = 0;
     button_id btn;
 
-    uint8_t pacote[10];
+    uint8_t pacote[10] = {0};
+    pacote[9] = 0xFF; // delimitador
 
-    pacote[0] = 0;
-    pacote[1] = 0;
-    pacote[2] = 0;
-    pacote[3] = 0;
-    pacote[4] = 0;
-    pacote[5] = 0;
-    pacote[6] = 0;
-    pacote[7] = 0;
-    pacote[8] = 0;
-    pacote[9] = 0xFF;
-    
+    // Inicializar UART do HC-06
+    uart_init(HC06_UART_ID, HC06_BAUD_RATE);
+    gpio_set_function(HC06_TX_PIN, GPIO_FUNC_UART);
+    gpio_set_function(HC06_RX_PIN, GPIO_FUNC_UART);
+
+    vTaskDelay(pdMS_TO_TICKS(2000)); // Espera 2 segundos depois de configurar o HC-06
+
+    // Inicializar o HC-06 (nome/senha)
+    hc06_init("forza7", "1234");
+
     while (true) {
-
         bool has_data = false;
 
         if (xQueueReceive(xQueueSteer, &data_steer, pdMS_TO_TICKS(5))) {
-            pacote[0] = (uint8_t) data_steer;
+            pacote[0] = (uint8_t)data_steer;
             has_data = true;
         }
 
@@ -248,23 +247,17 @@ void uart_task(void *p) {
             pacote[4] = data_break & 0xFF;
             has_data = true;
         }
-        
+
         if (xQueueReceive(xQueueButtons, &btn, pdMS_TO_TICKS(5))) {
-            // printf("btn.x: %d\n", btn.x);
-            if (btn.x) {
-                pacote[5] = (uint8_t) btn.x;
-            } if (btn.triangle) {
-                pacote[6] = (uint8_t) btn.triangle;
-            } if (btn.circle) {
-                pacote[7] = (uint8_t) btn.circle;
-            } if (btn.square) {
-                pacote[8] = (uint8_t) btn.square;
-            }
+            if (btn.x) pacote[5] = (uint8_t)btn.x;
+            if (btn.triangle) pacote[6] = (uint8_t)btn.triangle;
+            if (btn.circle) pacote[7] = (uint8_t)btn.circle;
+            if (btn.square) pacote[8] = (uint8_t)btn.square;
             has_data = true;
         }
 
         if (has_data) {
-            uart_write_blocking(UART_ID, pacote, 10);
+            uart_write_blocking(HC06_UART_ID, pacote, 10); //atualizado com bluetooth
         }
 
         pacote[5] = 0;
@@ -277,22 +270,9 @@ void uart_task(void *p) {
 }
 
 
-void hc06_task(void *p) {
-    // uart_init(HC06_UART_ID, HC06_BAUD_RATE);
-    // gpio_set_function(HC06_TX_PIN, GPIO_FUNC_UART);
-    // gpio_set_function(HC06_RX_PIN, GPIO_FUNC_UART);
-    // hc06_init("forza4", "1234");
-
-    while (true) {
-        printf("oi\n");
-        // uart_puts(HC06_UART_ID, "FUNCIONA!\n");
-        vTaskDelay(pdMS_TO_TICKS(500));
-    }
-}
-
 int main() {
     stdio_init_all();
-    init_uart();
+    // init_uart();
     init_buttons();
     adc_init();
     adc_gpio_init(27);
@@ -303,10 +283,9 @@ int main() {
     xQueueBreak = xQueueCreate(32, sizeof(int16_t));
     xQueueButtons = xQueueCreate(32, sizeof(button_id));
     
-    // xTaskCreate(hc06_task, "UART_Task 1", 8192, NULL, 1, NULL);
     xTaskCreate(mpu6050_task, "mpu6050_Task", 8192, NULL, 1, NULL);
     xTaskCreate(accel_task, "accel_Task", 8192, NULL, 1, NULL);
-    xTaskCreate(break_task, "break_Task", 8192, NULL, 1, NULL);
+    // xTaskCreate(break_task, "break_Task", 8192, NULL, 1, NULL);
     xTaskCreate(uart_task, "uart_Task", 8192, NULL, 1, NULL);
     vTaskStartScheduler();
 

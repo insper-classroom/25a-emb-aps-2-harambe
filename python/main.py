@@ -52,11 +52,6 @@ def press_key(key_states):
     if key_states["4"]:
         pyautogui.keyDown("4")
         pyautogui.keyUp("4")
-
-    # pyautogui.keyUp("w")
-    # pyautogui.keyUp("a")
-    # pyautogui.keyUp("s")
-    # pyautogui.keyUp("d")
     
 def controle(ser):
     """Lê pacotes UART com dados de volante, acelerador e freio."""
@@ -133,12 +128,16 @@ def serial_ports():
                 pass
     elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
         # Linux/Cygwin
-        ports = glob.glob('/dev/tty[A-Za-z]*')
+        ports = glob.glob('/dev/tty[A-Za-z]*') + glob.glob('/dev/rfcomm*')
+        print(ports)
+        # ports = glob.glob('/dev/rfcomm*')
+
     elif sys.platform.startswith('darwin'):
         # macOS
         ports = glob.glob('/dev/tty.*')
     else:
-        raise EnvironmentError('Plataforma não suportada para detecção de portas seriais.')
+        raise EnvironmentError(
+            'Plataforma não suportada para detecção de portas seriais.')
 
     result = []
     for port in ports:
@@ -148,19 +147,37 @@ def serial_ports():
             result.append(port)
         except (OSError, serial.SerialException):
             pass
+
+    # ser = serial.Serial(
+    # port='/dev/rfcomm2',
+    # baudrate=9600,       # Coloque aqui o baudrate correto para o seu dispositivo!
+    # bytesize=serial.EIGHTBITS,
+    # parity=serial.PARITY_NONE,
+    # stopbits=serial.STOPBITS_ONE,
+    # timeout=1            # 1 segundo de timeout (não travar o código para sempre)
+    # )
+
+    # print(f'Conectado à {ser.portstr}')
+
+    # result.append('/dev/rfcomm1')
+    result.append('/dev/rfcomm2')
+    # print(result)
     return result
 
 def conectar_porta(port_name, root, botao_conectar, status_label, mudar_cor_circulo):
     """Abre a conexão com a porta selecionada e inicia o loop de leitura."""
     if not port_name:
-        messagebox.showwarning("Aviso", "Selecione uma porta serial antes de conectar.")
+        messagebox.showwarning(
+            "Aviso", "Selecione uma porta serial antes de conectar.")
         return
 
     try:
         ser = serial.Serial(port_name, 115200, timeout=1)
-        status_label.config(text=f"Conectado em {port_name}", foreground="green")
+        status_label.config(
+            text=f"Conectado em {port_name}", foreground="green")
         mudar_cor_circulo("green")
-        botao_conectar.config(text="Conectado")  # Update button text to indicate connection
+        # Update button text to indicate connection
+        botao_conectar.config(text="Conectado")
         root.update()
 
         # Inicia o loop de leitura (bloqueante).
@@ -169,7 +186,8 @@ def conectar_porta(port_name, root, botao_conectar, status_label, mudar_cor_circ
     except KeyboardInterrupt:
         print("Encerrando via KeyboardInterrupt.")
     except Exception as e:
-        messagebox.showerror("Erro de Conexão", f"Não foi possível conectar em {port_name}.\nErro: {e}")
+        messagebox.showerror(
+            "Erro de Conexão", f"Não foi possível conectar em {port_name}.\nErro: {e}")
         mudar_cor_circulo("red")
     finally:
         ser.close()
@@ -191,7 +209,8 @@ def criar_janela():
     style = ttk.Style(root)
     style.theme_use("clam")
     style.configure("TFrame", background=dark_bg)
-    style.configure("TLabel", background=dark_bg, foreground=dark_fg, font=("Segoe UI", 11))
+    style.configure("TLabel", background=dark_bg,
+                    foreground=dark_fg, font=("Segoe UI", 11))
     style.configure("TButton", font=("Segoe UI", 10, "bold"),
                     foreground=dark_fg, background="#444444", borderwidth=0)
     style.map("TButton", background=[("active", "#555555")])
@@ -211,7 +230,8 @@ def criar_janela():
     frame_principal = ttk.Frame(root, padding="20")
     frame_principal.pack(expand=True, fill="both")
 
-    titulo_label = ttk.Label(frame_principal, text="Controle de Mouse", font=("Segoe UI", 14, "bold"))
+    titulo_label = ttk.Label(
+        frame_principal, text="Controle de Mouse", font=("Segoe UI", 14, "bold"))
     titulo_label.pack(pady=(0, 10))
 
     porta_var = tk.StringVar(value="")
@@ -220,7 +240,8 @@ def criar_janela():
         frame_principal,
         text="Conectar e Iniciar Leitura",
         style="Accent.TButton",
-        command=lambda: conectar_porta(porta_var.get(), root, botao_conectar, status_label, mudar_cor_circulo)
+        command=lambda: conectar_porta(
+            porta_var.get(), root, botao_conectar, status_label, mudar_cor_circulo)
     )
     botao_conectar.pack(pady=10)
 
@@ -242,8 +263,10 @@ def criar_janela():
     port_dropdown.grid(row=0, column=1, padx=10)
 
     # Right: Status circle (canvas)
-    circle_canvas = tk.Canvas(footer_frame, width=20, height=20, highlightthickness=0, bg=dark_bg)
-    circle_item = circle_canvas.create_oval(2, 2, 18, 18, fill="red", outline="")
+    circle_canvas = tk.Canvas(footer_frame, width=20,
+                              height=20, highlightthickness=0, bg=dark_bg)
+    circle_item = circle_canvas.create_oval(
+        2, 2, 18, 18, fill="red", outline="")
     circle_canvas.grid(row=0, column=2, sticky="e")
 
     footer_frame.columnconfigure(1, weight=1)
