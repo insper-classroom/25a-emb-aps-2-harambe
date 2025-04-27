@@ -219,7 +219,7 @@ void uart_task(void *p) {
     gpio_init(HC06_STATE_PIN);
     gpio_set_dir(HC06_STATE_PIN, GPIO_IN);
 
-    const uint LED_PIN = 14; // ajuste conforme o pino que você ligou seu LED
+    const uint LED_PIN = 16; 
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
 
