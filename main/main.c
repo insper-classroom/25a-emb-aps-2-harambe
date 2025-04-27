@@ -45,13 +45,6 @@ const int BTN_X = 11;
 const int BTN_SQUARE = 12;
 const int BTN_CIRCLE = 13;
 
-void init_uart() {
-    uart_init(UART_ID, BAUD_RATE);
-    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
-    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
-}
-
-
 void btn_callback(uint gpio, uint32_t events) {
     button_id button;
     button.circle = 0;
@@ -269,10 +262,8 @@ void uart_task(void *p) {
     }
 }
 
-
 int main() {
     stdio_init_all();
-    // init_uart();
     init_buttons();
     adc_init();
     adc_gpio_init(27);
@@ -285,7 +276,7 @@ int main() {
     
     xTaskCreate(mpu6050_task, "mpu6050_Task", 8192, NULL, 1, NULL);
     xTaskCreate(accel_task, "accel_Task", 8192, NULL, 1, NULL);
-    // xTaskCreate(break_task, "break_Task", 8192, NULL, 1, NULL);
+    xTaskCreate(break_task, "break_Task", 8192, NULL, 1, NULL);
     xTaskCreate(uart_task, "uart_Task", 8192, NULL, 1, NULL);
     vTaskStartScheduler();
 
