@@ -6,7 +6,6 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from time import sleep
-import RPi.GPIO as GPIO  # Para controlar o GPIO
 
 TOLERANCIA = 10           # Tolerância mínima para o volante
 TOLERANCIA_PEDAL = 200   # Tolerância mínima para considerar pressão do pedal
@@ -151,16 +150,17 @@ def serial_ports():
 
 def conectar_porta(port_name, root, botao_conectar, status_label, mudar_cor_circulo):
     """Abre a conexão com a porta selecionada e inicia o loop de leitura."""
-    LED_PIN = 17  # Defina o pino GPIO que você está usando para o LED
-    GPIO.setmode(GPIO.BCM)  # Usando numeração BCM dos pinos
-    GPIO.setup(LED_PIN, GPIO.OUT)  # Configura o pino do LED como saída
     
+    ser_reserva = serial.Serial('/dev/ttyACM0', 115200) #teste
     if not port_name:
         messagebox.showwarning(
             "Aviso", "Selecione uma porta serial antes de conectar.")
         return
 
     try:
+        status_led = 1  # Envia 1 byte
+        ser_reserva.write(bytes([status_led]))
+
         ser = serial.Serial(port_name, 115200, timeout=1)
         status_label.config(
             text=f"Conectado em {port_name}", foreground="green")
@@ -169,7 +169,6 @@ def conectar_porta(port_name, root, botao_conectar, status_label, mudar_cor_circ
         botao_conectar.config(text="Conectado")
         root.update()
 
-        GPIO.output(LED_PIN, GPIO.HIGH)  # Liga o LED
 
         # Inicia o loop de leitura (bloqueante).
         controle(ser)
@@ -181,7 +180,10 @@ def conectar_porta(port_name, root, botao_conectar, status_label, mudar_cor_circ
             "Erro de Conexão", f"Não foi possível conectar em {port_name}.\nErro: {e}")
         mudar_cor_circulo("red")
     finally:
-        GPIO.output(LED_PIN, GPIO.LOW)  # Desliga o LED
+
+        status_led = 0  # Envia 1 byte
+        ser_reserva.write(bytes([status_led]))
+
         ser.close()
         status_label.config(text="Conexão encerrada.", foreground="red")
         mudar_cor_circulo("red")
