@@ -216,6 +216,13 @@ void uart_task(void *p) {
     gpio_set_function(HC06_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(HC06_RX_PIN, GPIO_FUNC_UART);
 
+    gpio_init(HC06_STATE_PIN);
+    gpio_set_dir(HC06_STATE_PIN, GPIO_IN);
+
+    const uint LED_PIN = 14; // ajuste conforme o pino que você ligou seu LED
+    gpio_init(LED_PIN);
+    gpio_set_dir(LED_PIN, GPIO_OUT);
+
     vTaskDelay(pdMS_TO_TICKS(2000)); // Espera 2 segundos depois de configurar o HC-06
 
     // Inicializar o HC-06 (nome/senha)
@@ -223,6 +230,10 @@ void uart_task(void *p) {
 
     while (true) {
         bool has_data = false;
+
+        bool connected = gpio_get(HC06_STATE_PIN);
+
+        gpio_put(LED_PIN, connected);
 
         if (xQueueReceive(xQueueSteer, &data_steer, pdMS_TO_TICKS(5))) {
             pacote[0] = (uint8_t)data_steer;

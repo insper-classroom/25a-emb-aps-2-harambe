@@ -129,8 +129,6 @@ def serial_ports():
     elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
         # Linux/Cygwin
         ports = glob.glob('/dev/tty[A-Za-z]*') + glob.glob('/dev/rfcomm*')
-        print(ports)
-        # ports = glob.glob('/dev/rfcomm*')
 
     elif sys.platform.startswith('darwin'):
         # macOS
@@ -148,20 +146,6 @@ def serial_ports():
         except (OSError, serial.SerialException):
             pass
 
-    # ser = serial.Serial(
-    # port='/dev/rfcomm2',
-    # baudrate=9600,       # Coloque aqui o baudrate correto para o seu dispositivo!
-    # bytesize=serial.EIGHTBITS,
-    # parity=serial.PARITY_NONE,
-    # stopbits=serial.STOPBITS_ONE,
-    # timeout=1            # 1 segundo de timeout (não travar o código para sempre)
-    # )
-
-    # print(f'Conectado à {ser.portstr}')
-
-    # result.append('/dev/rfcomm1')
-    result.append('/dev/rfcomm2')
-    # print(result)
     return result
 
 def conectar_porta(port_name, root, botao_conectar, status_label, mudar_cor_circulo):
