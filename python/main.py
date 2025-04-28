@@ -7,14 +7,9 @@ from tkinter import ttk
 from tkinter import messagebox
 from time import sleep
 
-TOLERANCIA = 10           # Tolerância mínima para o volante
+TOLERANCIA = 10   # Tolerância mínima para o volante
 
 MAX_KEY_PRESS = 10  # Máximo de vezes que uma tecla pode ser pressionada sem resetar
-
-import pyautogui
-from time import sleep
-
-TOLERANCIA = 10  # ajuste conforme necessário
 
 def controle(ser):
     """Lê pacotes UART e simula teclas."""
@@ -170,7 +165,7 @@ def controle(ser):
                 pyautogui.keyDown("r")
             elif not key_states["3"] and last_button_states["3"]:
                 pyautogui.keyUp("r")
-                
+
             if key_states["4"] and not last_button_states["4"]:
                 pyautogui.keyDown("shiftleft")
             elif not key_states["4"] and last_button_states["4"]:

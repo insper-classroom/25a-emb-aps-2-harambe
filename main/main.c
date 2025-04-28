@@ -146,7 +146,7 @@ void mpu6050_task(void *p) {
         float roll = euler.angle.roll;
         // float pitch = euler.angle.pitch;
 
-        int8_t delta_x = (int8_t)(roll * 0.7);
+        int8_t delta_x = (int8_t)(roll * 0.8);
 
         // delta_x -= 10; //AJUSTANDO O DESLOCAMENTO DO ZERO
 
