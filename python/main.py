@@ -223,15 +223,13 @@ def serial_ports():
 def conectar_porta(port_name, root, botao_conectar, status_label, mudar_cor_circulo):
     """Abre a conexão com a porta selecionada e inicia o loop de leitura."""
     
-    ser_reserva = serial.Serial('/dev/ttyACM0', 115200) #teste
+    # ser_reserva = serial.Serial('/dev/ttyACM0', 115200) #teste
     if not port_name:
         messagebox.showwarning(
             "Aviso", "Selecione uma porta serial antes de conectar.")
         return
 
     try:
-        status_led = 1  # Envia 1 byte
-        ser_reserva.write(bytes([status_led]))
 
         ser = serial.Serial(port_name, 115200, timeout=1)
         status_label.config(
@@ -241,6 +239,8 @@ def conectar_porta(port_name, root, botao_conectar, status_label, mudar_cor_circ
         botao_conectar.config(text="Conectado")
         root.update()
 
+        status_led = 1  # Envia 1 byte
+        ser.write(bytes([status_led]))
 
         # Inicia o loop de leitura (bloqueante).
         controle(ser)
@@ -252,9 +252,10 @@ def conectar_porta(port_name, root, botao_conectar, status_label, mudar_cor_circ
             "Erro de Conexão", f"Não foi possível conectar em {port_name}.\nErro: {e}")
         mudar_cor_circulo("red")
     finally:
+        ser = serial.Serial(port_name, 115200, timeout=1)
 
         status_led = 0  # Envia 1 byte
-        ser_reserva.write(bytes([status_led]))
+        ser.write(bytes([status_led]))
 
         ser.close()
         status_label.config(text="Conexão encerrada.", foreground="red")

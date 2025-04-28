@@ -257,15 +257,19 @@ void uart_task(void *p) {
         bool connected = gpio_get(HC06_STATE_PIN);
         if (!paired) {
             // printf("yellow\n");
-            gpio_put(LED_PIN_YELLOW, 1);
+            gpio_put(LED_PIN_YELLOW, connected);
         }
         
-        if (uart_is_readable(UART_ID)) {
-            int status_led = uart_getc(UART_ID);
+        if (uart_is_readable(HC06_UART_ID)) {
+            int status_led = uart_getc(HC06_UART_ID);
             paired = true;
             gpio_put(LED_PIN_YELLOW, 0);
             // printf("status: %d\n", status_led);
-            gpio_put(LED_PIN_BLUE, status_led);
+            if (status_led == 1) {
+                gpio_put(LED_PIN_BLUE, status_led);
+            } else {
+                gpio_put(LED_PIN_BLUE, 0);
+            }
         }
 
         if (xQueueReceive(xQueueSteer, &data_steer, pdMS_TO_TICKS(5))) {
