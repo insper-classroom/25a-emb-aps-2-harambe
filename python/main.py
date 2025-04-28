@@ -9,51 +9,18 @@ from time import sleep
 
 TOLERANCIA = 10           # Tolerância mínima para o volante
 
-def press_key(key_states):
-    pyautogui.PAUSE = 0
+MAX_KEY_PRESS = 10  # Máximo de vezes que uma tecla pode ser pressionada sem resetar
 
-    if key_states["w"] == 1:
-        pyautogui.keyUp("s")
-        pyautogui.keyDown("w")
-    else:
-        pyautogui.keyUp("w")
+import pyautogui
+from time import sleep
 
-    if key_states["s"] == 1:
-        pyautogui.keyUp("w")
-        pyautogui.keyDown("s")
-    else:
-        pyautogui.keyUp("s")
+TOLERANCIA = 10  # ajuste conforme necessário
 
-    if key_states["a"] == 1:
-        pyautogui.keyDown("a")
-        pyautogui.keyUp("d")
-    else:
-        pyautogui.keyUp("a")
-
-    if key_states["d"] == 1:
-        pyautogui.keyDown("d")
-        pyautogui.keyUp("a")
-    else:
-        pyautogui.keyUp("d")
-
-    if key_states["1"]:
-        pyautogui.keyDown("1")
-        pyautogui.keyUp("1")
-        
-    if key_states["2"]:
-        pyautogui.keyDown("2")
-        pyautogui.keyUp("2")
-
-    if key_states["3"]:
-        pyautogui.keyDown("3")
-        pyautogui.keyUp("3")
-
-    if key_states["4"]:
-        pyautogui.keyDown("4")
-        pyautogui.keyUp("4")
-    
 def controle(ser):
-    """Lê pacotes UART com dados de volante, acelerador e freio."""
+    """Lê pacotes UART e simula teclas."""
+
+    MAX_KEY_PRESSES = 7
+    MAX_KEY_PRESS = 10
 
     key_states = {
         'w': 0,
@@ -66,51 +33,162 @@ def controle(ser):
         '4': 0
     }
 
+    key_counters = {
+        'a': 0,
+        'd': 0,
+        'w': 0,
+        's': 0
+    }
+
+    last_button_states = {
+        '1': 0,
+        '2': 0,
+        '3': 0,
+        '4': 0
+    }
+
+    pyautogui.PAUSE = 0
+
     while True:
-        pacote = ser.read(10)
-        if len(pacote) != 10 or pacote[9] != 0xFF:
-            continue  # ignora pacotes incompletos ou inválidos
+        try:
+            pacote = ser.read(10)
 
-        direcao = int.from_bytes(pacote[0:1], byteorder='little', signed=True)
-        freio = int.from_bytes(pacote[1:3], byteorder='big', signed=False)
-        acelerador = int.from_bytes(pacote[3:5], byteorder='big', signed=False)
-        btn_x = pacote[5]
-        btn_triangle = pacote[6]
-        btn_circle = pacote[7]
-        btn_square = pacote[8]
+            if len(pacote) != 10:
+                sleep(0.01)
+                continue
 
-        print(f"Volante: {direcao} | Acelerador: {acelerador} | Freio: {freio} | X: {btn_x} | Triangle: {btn_triangle} | Circle: {btn_circle} | Square: {btn_square}")
+            if pacote[9] != 0xFF:
+                continue
 
-        if direcao > TOLERANCIA:
-            key_states["d"] = 0
-            key_states["a"] = 1
-        elif direcao < -TOLERANCIA:
-            key_states["a"] = 0
-            key_states["d"] = 1
-        elif direcao < TOLERANCIA and direcao > -TOLERANCIA:
-            key_states["a"] = 0
-            key_states["d"] = 0
+            direcao = int.from_bytes(pacote[0:1], byteorder='little', signed=True)
+            freio = int.from_bytes(pacote[1:3], byteorder='big', signed=False)
+            acelerador = int.from_bytes(pacote[3:5], byteorder='big', signed=False)
+            btn_x = pacote[5]
+            btn_triangle = pacote[6]
+            btn_circle = pacote[7]
+            btn_square = pacote[8]
 
-        if acelerador > 600:
-            key_states["w"] = 1
-            key_states["s"] = 0
-        elif acelerador <= 600:
-            key_states["w"] = 0
+            print(f"Volante: {direcao} | Acelerador: {acelerador} | Freio: {freio} | X: {btn_x} | Triangle: {btn_triangle} | Circle: {btn_circle} | Square: {btn_square}")
 
-        if freio > 600:
-            key_states["s"] = 1
-            key_states["w"] = 0
-        elif freio <= 600:
-            key_states["s"] = 0
+            if direcao > TOLERANCIA:
+                if key_counters['a'] < MAX_KEY_PRESSES:
+                    key_states["d"] = 0
+                    key_states["a"] = 1
+                    key_counters['a'] += 1
+                else:
+                    key_states["a"] = 0
+            elif direcao < -TOLERANCIA:
+                if key_counters['d'] < MAX_KEY_PRESSES:
+                    key_states["a"] = 0
+                    key_states["d"] = 1
+                    key_counters['d'] += 1
+                else:
+                    key_states["d"] = 0
+            else:
+                key_states["a"] = 0
+                key_states["d"] = 0
+                key_counters['a'] = 0
+                key_counters['d'] = 0
 
-        key_states["1"] = btn_x
-        key_states["2"] = btn_square
-        key_states["3"] = btn_triangle
-        key_states["4"] = btn_circle
+            if acelerador > 600:
+                if key_counters['w'] < MAX_KEY_PRESSES:
+                    key_states["w"] = 1
+                    key_states["s"] = 0
+                    key_counters['w'] += 1
+                else:
+                    key_states["w"] = 0
+            else:
+                key_states["w"] = 0
+                key_counters['w'] = 0
 
-        press_key(key_states)
+            if freio > 600:
+                if key_counters['s'] < MAX_KEY_PRESSES:
+                    key_states["s"] = 1
+                    key_states["w"] = 0
+                    key_counters['s'] += 1
+                else:
+                    key_states["s"] = 0
+            else:
+                key_states["s"] = 0
+                key_counters['s'] = 0
 
-        sleep(0.05)  # Delay leve para não travar o sistema
+            # Atualizar estados dos botões
+            key_states["1"] = btn_x
+            key_states["2"] = btn_square
+            key_states["3"] = btn_triangle
+            key_states["4"] = btn_circle
+
+            if key_states["a"] == 1:
+            # Direção
+                if key_counters["a"] < MAX_KEY_PRESS:
+                    pyautogui.keyDown("a")
+                    pyautogui.keyUp("d")
+                    key_counters["a"] += 1
+            else:
+                pyautogui.keyUp("a")
+                key_counters["a"] = 0 
+
+            if key_states["d"] == 1:
+                if key_counters["d"] < MAX_KEY_PRESS:
+                    pyautogui.keyDown("d")
+                    pyautogui.keyUp("a")
+                    key_counters["d"] += 1
+            else:
+                pyautogui.keyUp("d")
+                key_counters["d"] = 0  
+
+            # Acelerador e freio: 'w' e 's'
+            if key_states["w"] == 1:
+                if key_counters["w"] < MAX_KEY_PRESS:
+                    pyautogui.keyDown("w")
+                    pyautogui.keyUp("s")
+                    key_counters["w"] += 1
+            else:
+                pyautogui.keyUp("w")
+                key_counters["w"] = 0
+
+            if key_states["s"] == 1:
+                if key_counters["s"] < MAX_KEY_PRESS:
+                    pyautogui.keyDown("s")
+                    pyautogui.keyUp("w")
+                    key_counters["s"] += 1
+            else:
+                pyautogui.keyUp("s")
+                key_counters["s"] = 0
+
+            if key_states["1"] and not last_button_states["1"]:
+                pyautogui.keyDown("space")
+            elif not key_states["1"] and last_button_states["1"]:
+                pyautogui.keyUp("space")
+
+            if key_states["2"] and not last_button_states["2"]:
+                pyautogui.keyDown("c")
+            elif not key_states["2"] and last_button_states["2"]:
+                pyautogui.keyUp("c")
+
+            if key_states["3"] and not last_button_states["3"]:
+                pyautogui.keyDown("r")
+            elif not key_states["3"] and last_button_states["3"]:
+                pyautogui.keyUp("r")
+                
+            if key_states["4"] and not last_button_states["4"]:
+                pyautogui.keyDown("shiftleft")
+            elif not key_states["4"] and last_button_states["4"]:
+                pyautogui.keyUp("shiftleft")
+
+
+            last_button_states["1"] = key_states["1"]
+            last_button_states["2"] = key_states["2"]
+            last_button_states["3"] = key_states["3"]
+            last_button_states["4"] = key_states["4"]
+
+            sleep(0.01)
+
+            # ser.reset_input_buffer()
+        except Exception as e:
+            print(f"Erro: {e}")
+            sleep(0.1)
+
 
 def serial_ports():
     """Retorna uma lista das portas seriais disponíveis na máquina."""

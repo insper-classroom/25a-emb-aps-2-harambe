@@ -146,7 +146,9 @@ void mpu6050_task(void *p) {
         float roll = euler.angle.roll;
         // float pitch = euler.angle.pitch;
 
-        int8_t delta_x = (int8_t)(roll * 1);
+        int8_t delta_x = (int8_t)(roll * 0.7);
+
+        // delta_x -= 10; //AJUSTANDO O DESLOCAMENTO DO ZERO
 
         // if (delta_x < 6 && delta_x > -6) {
         //     delta_x = delta_x * 0.95;
@@ -157,14 +159,16 @@ void mpu6050_task(void *p) {
 
         // printf("delta: %d\n", delta_x);
         // Envia só se houve variação relevante
-        if (abs(delta_x - last_delta_x) >= TOLERANCIA) {
+        // xQueueSend(xQueueSteer, &delta_x, 0);
+
+        if (abs(delta_x - last_delta_x) >= 1) {
             // printf("delta: %d\n", delta_x);
 
             xQueueSend(xQueueSteer, &delta_x, 0);
         }
         last_delta_x = delta_x;
 
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(30));
     }
 }
 
@@ -265,6 +269,7 @@ void uart_task(void *p) {
         }
 
         if (xQueueReceive(xQueueSteer, &data_steer, pdMS_TO_TICKS(5))) {
+            // printf("delta: %d\n", data_steer);
             pacote[0] = (uint8_t)data_steer;
             has_data = true;
         }
@@ -290,6 +295,7 @@ void uart_task(void *p) {
         }
 
         if (has_data) {
+            // printf("delta: %d\n", pacote[0]); //VALOR CHEGANDO COMO 255!!
             uart_write_blocking(HC06_UART_ID, pacote, 10); //atualizado com bluetooth
         }
 
@@ -298,7 +304,7 @@ void uart_task(void *p) {
         pacote[7] = 0;
         pacote[8] = 0;
 
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 
