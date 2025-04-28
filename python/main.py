@@ -8,7 +8,6 @@ from tkinter import messagebox
 from time import sleep
 
 TOLERANCIA = 10           # Tolerância mínima para o volante
-TOLERANCIA_PEDAL = 200   # Tolerância mínima para considerar pressão do pedal
 
 def press_key(key_states):
     pyautogui.PAUSE = 0
@@ -111,7 +110,7 @@ def controle(ser):
 
         press_key(key_states)
 
-        sleep(0.01)  # Delay leve para não travar o sistema
+        sleep(0.05)  # Delay leve para não travar o sistema
 
 def serial_ports():
     """Retorna uma lista das portas seriais disponíveis na máquina."""

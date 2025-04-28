@@ -25,7 +25,7 @@
 #define I2C_SCL_GPIO 21 //EU ALTEREI ISSO!
 #define MPU_ADDRESS 0x68
 
-#define ANALOG_TOLERANCE 10
+#define ANALOG_TOLERANCE 100
 #define TOLERANCIA 1
 
 QueueHandle_t xQueueSteer;
@@ -146,17 +146,23 @@ void mpu6050_task(void *p) {
         float roll = euler.angle.roll;
         // float pitch = euler.angle.pitch;
 
-        int8_t delta_x = (int8_t)(roll * 0.5);
+        int8_t delta_x = (int8_t)(roll * 1);
 
-        if (delta_x > 40) delta_x = 40;
-        if (delta_x < -40) delta_x = -40;
+        // if (delta_x < 6 && delta_x > -6) {
+        //     delta_x = delta_x * 0.95;
+        // }
+
+        // if (delta_x > 40) delta_x = 40;
+        // if (delta_x < -40) delta_x = -40;
 
         // printf("delta: %d\n", delta_x);
         // Envia só se houve variação relevante
         if (abs(delta_x - last_delta_x) >= TOLERANCIA) {
+            // printf("delta: %d\n", delta_x);
+
             xQueueSend(xQueueSteer, &delta_x, 0);
-            last_delta_x = delta_x;
         }
+        last_delta_x = delta_x;
 
         vTaskDelay(pdMS_TO_TICKS(10));
     }
@@ -219,21 +225,44 @@ void uart_task(void *p) {
     gpio_init(HC06_STATE_PIN);
     gpio_set_dir(HC06_STATE_PIN, GPIO_IN);
 
-    const uint LED_PIN = 16; 
-    gpio_init(LED_PIN);
-    gpio_set_dir(LED_PIN, GPIO_OUT);
+    const uint LED_PIN_RED = 16; 
+    gpio_init(LED_PIN_RED);
+    gpio_set_dir(LED_PIN_RED, GPIO_OUT);
+    gpio_put(LED_PIN_RED, 1);
+
+    const uint LED_PIN_YELLOW = 18; 
+    gpio_init(LED_PIN_YELLOW);
+    gpio_set_dir(LED_PIN_YELLOW, GPIO_OUT);
+    
+    const uint LED_PIN_BLUE = 17; 
+    gpio_init(LED_PIN_BLUE);
+    gpio_set_dir(LED_PIN_BLUE, GPIO_OUT);
+    gpio_put(LED_PIN_BLUE, 0);
 
     vTaskDelay(pdMS_TO_TICKS(2000)); // Espera 2 segundos depois de configurar o HC-06
 
     // Inicializar o HC-06 (nome/senha)
     hc06_init("forza7", "1234");
-
+    
+    bool paired = false;
+    
     while (true) {
+        gpio_put(LED_PIN_RED, 0);
         bool has_data = false;
-
+        
         bool connected = gpio_get(HC06_STATE_PIN);
-
-        gpio_put(LED_PIN, connected);
+        if (!paired) {
+            // printf("yellow\n");
+            gpio_put(LED_PIN_YELLOW, 1);
+        }
+        
+        if (uart_is_readable(UART_ID)) {
+            int status_led = uart_getc(UART_ID);
+            paired = true;
+            gpio_put(LED_PIN_YELLOW, 0);
+            // printf("status: %d\n", status_led);
+            gpio_put(LED_PIN_BLUE, status_led);
+        }
 
         if (xQueueReceive(xQueueSteer, &data_steer, pdMS_TO_TICKS(5))) {
             pacote[0] = (uint8_t)data_steer;
